@@ -1,0 +1,12 @@
+node_modules
+**/node_modules
+.git
+.expo
+apps
+tools
+services/barn/data
+**/.env
+**/.env.*
+!**/.env.example
+*.log
+.DS_Store

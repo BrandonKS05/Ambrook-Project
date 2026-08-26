@@ -147,6 +147,25 @@ pnpm --filter @saddlebag/barn smoke:claude         # one-shot categorizer check
 | `SADDLEBAG_CATEGORIZER` | auto | `claude` or `rules` (auto: claude iff key set) |
 | `SADDLEBAG_CLAUDE_MODEL` | `claude-opus-5` | model override |
 
+## Hosting the barn (optional)
+
+The barn is a stateful long-running server (SQLite + image files on disk), so
+serverless platforms like Vercel are the wrong shape for it — use any host
+that runs a Docker container with a persistent volume. The included
+`Dockerfile` expects the volume at `/data`. On Railway:
+
+1. New Project → Deploy from GitHub repo (the Dockerfile is auto-detected).
+2. Add a **Volume** mounted at `/data`.
+3. Settings → Networking → Generate Domain, target port `4477`.
+4. Optionally set `ANTHROPIC_API_KEY` to enable Claude categorization.
+
+> **Before setting the key on a public deployment:** the demo has no auth, so
+> a public barn with a key lets anyone on the internet spend your API
+> credits. For an always-up public link, leave the key off (rules mode);
+> switch Claude on only while demoing live.
+
+Phones then point their in-app `barn` field at the public URL.
+
 ## Honest limitations
 
 Scoped as a demonstration, deliberately:
