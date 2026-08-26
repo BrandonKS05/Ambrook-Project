@@ -6,6 +6,7 @@
   "packageManager": "pnpm@10.29.2",
   "scripts": {
     "dev": "pnpm --filter @saddlebag/barn dev",
+    "demo": "pnpm --filter @saddlebag/field-sim demo",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test"
   },
