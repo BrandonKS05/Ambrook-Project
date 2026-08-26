@@ -18,10 +18,6 @@ import type { LocalReceipt } from "@saddlebag/sync";
 
 import { DEFAULT_BARN_URL, initAppModel, type AppModel } from "./src/app-model";
 
-const ink = "#2b2620";
-const paper = "#f4f1ea";
-const card = "#fffdf8";
-
 type PickedImage = { base64: string; uri: string };
 
 export default function App() {
@@ -141,18 +137,19 @@ export default function App() {
   if (model === null) {
     return (
       <View style={[styles.screen, styles.center]}>
-        <Text style={styles.h1}>🐴 saddlebag</Text>
-        <Text style={styles.dim}>opening the saddlebag…</Text>
+        <Text style={styles.title}>saddlebag</Text>
+        <Text style={styles.dim}>opening…</Text>
       </View>
     );
   }
 
-  const netChip =
+  const netLine =
     online === false
-      ? { label: "offline — stashing locally", style: styles.chipOffline }
+      ? "offline — stashing locally"
       : syncError !== null
-        ? { label: "barn unreachable", style: styles.chipOffline }
-        : { label: "synced with the barn", style: styles.chipOnline };
+        ? "barn unreachable"
+        : "synced";
+  const netStyle = netLine === "synced" ? styles.ok : styles.warn;
 
   return (
     <View style={styles.screen}>
@@ -163,41 +160,43 @@ export default function App() {
         keyExtractor={(item) => item.receipt.id}
         ListHeaderComponent={
           <View>
-            <View style={styles.headerRow}>
-              <Text style={styles.h1}>🐴 saddlebag</Text>
+            <View style={styles.rowBetween}>
+              <Text style={styles.title}>saddlebag</Text>
               <Text style={styles.dim}>{model.deviceId}</Text>
             </View>
-            <View style={styles.headerRow}>
-              <Text style={[styles.chip, netChip.style]}>{netChip.label}</Text>
-              {pending > 0 && <Text style={[styles.chip, styles.chipPending]}>🎒 {pending} queued</Text>}
-              <Pressable onPress={() => void sync(model)} style={styles.buttonGhost}>
-                <Text style={styles.buttonGhostText}>Sync now</Text>
+            <View style={styles.rowBetween}>
+              <Text style={[styles.dim, netStyle]}>
+                {netLine}
+                {pending > 0 ? ` · ${pending} queued` : ""}
+              </Text>
+              <Pressable onPress={() => void sync(model)}>
+                <Text style={styles.link}>[sync]</Text>
               </Pressable>
             </View>
 
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>New expense</Text>
-              <TextInput style={styles.input} placeholder="Vendor (Cenex Co-op)" placeholderTextColor="#a39a8a" value={vendor} onChangeText={setVendor} />
+            <View style={styles.form}>
+              <TextInput style={styles.input} placeholder="vendor" placeholderTextColor="#999" value={vendor} onChangeText={setVendor} />
+              <TextInput style={styles.input} placeholder="amount (184.37)" placeholderTextColor="#999" keyboardType="decimal-pad" value={amount} onChangeText={setAmount} />
+              <TextInput style={styles.input} placeholder="memo" placeholderTextColor="#999" value={memo} onChangeText={setMemo} />
               <View style={styles.row}>
-                <TextInput style={[styles.input, styles.inputHalf]} placeholder="Amount (312.55)" placeholderTextColor="#a39a8a" keyboardType="decimal-pad" value={amount} onChangeText={setAmount} />
-                <Pressable onPress={() => void pick(true)} style={styles.buttonGhost}>
-                  <Text style={styles.buttonGhostText}>📷</Text>
+                <Pressable style={styles.button} onPress={() => void pick(true)}>
+                  <Text style={styles.buttonText}>photo</Text>
                 </Pressable>
-                <Pressable onPress={() => void pick(false)} style={styles.buttonGhost}>
-                  <Text style={styles.buttonGhostText}>🖼️</Text>
+                <Pressable style={styles.button} onPress={() => void pick(false)}>
+                  <Text style={styles.buttonText}>library</Text>
                 </Pressable>
                 {image !== null && <Image source={{ uri: image.uri }} style={styles.preview} />}
+                <View style={styles.spacer} />
+                <Pressable style={[styles.button, styles.buttonMain]} onPress={() => void stash()}>
+                  <Text style={[styles.buttonText, styles.buttonMainText]}>stash it</Text>
+                </Pressable>
               </View>
-              <TextInput style={styles.input} placeholder="Memo (diesel for the baler)" placeholderTextColor="#a39a8a" value={memo} onChangeText={setMemo} />
-              <Pressable onPress={() => void stash()} style={styles.button}>
-                <Text style={styles.buttonText}>Stash it — syncs when there's signal</Text>
-              </Pressable>
             </View>
 
-            <View style={styles.settingsRow}>
-              <Text style={styles.dim}>barn</Text>
+            <View style={styles.row}>
+              <Text style={styles.dim}>barn: </Text>
               <TextInput
-                style={[styles.input, styles.inputBarn]}
+                style={styles.inputBarn}
                 value={barnUrl}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -205,18 +204,16 @@ export default function App() {
                 onEndEditing={() => void saveBarnUrl(barnUrl)}
               />
             </View>
-            {receipts.length === 0 && (
-              <Text style={[styles.dim, styles.empty]}>Nothing stashed yet. Snap the first receipt.</Text>
-            )}
+            {receipts.length === 0 && <Text style={[styles.dim, styles.empty]}>nothing stashed yet</Text>}
           </View>
         }
-        renderItem={({ item }) => <ReceiptCard item={item} onApprove={approve} />}
+        renderItem={({ item }) => <ReceiptRow item={item} onApprove={approve} />}
       />
     </View>
   );
 }
 
-function ReceiptCard({
+function ReceiptRow({
   item,
   onApprove,
 }: {
@@ -226,40 +223,36 @@ function ReceiptCard({
   const receipt = item.receipt;
   const f = receipt.fields;
   const statusStyle =
-    receipt.status === "approved"
-      ? styles.chipApproved
-      : receipt.status === "suggested"
-        ? styles.chipSuggested
-        : styles.chipCaptured;
+    receipt.status === "approved" ? styles.ok : receipt.status === "suggested" ? styles.warn : styles.dim;
 
   return (
-    <View style={styles.card}>
-      <View style={styles.row}>
-        <Text style={styles.vendor}>{f.vendor ?? "(no vendor yet)"}</Text>
-        <Text style={styles.total}>{f.totalCents === null ? "—" : formatCents(f.totalCents)}</Text>
+    <View style={styles.receiptRow}>
+      <View style={styles.rowBetween}>
+        <Text style={styles.vendor}>{f.vendor ?? "(no vendor)"}</Text>
+        <Text style={styles.amount}>{f.totalCents === null ? "—" : formatCents(f.totalCents)}</Text>
       </View>
-      <View style={styles.row}>
-        <Text style={[styles.chip, statusStyle]}>{receipt.status}</Text>
-        {item.pendingOps > 0 && <Text style={[styles.chip, styles.chipPending]}>🎒 {item.pendingOps}</Text>}
-        {f.purchasedAt !== null && <Text style={styles.dim}>{f.purchasedAt}</Text>}
-      </View>
-      {f.memo !== null && <Text style={styles.memo}>📝 {f.memo}</Text>}
-      {f.category !== null && <Text style={styles.memo}>📒 {scheduleFLabel(f.category)}</Text>}
+      <Text style={styles.dim}>
+        <Text style={statusStyle}>{receipt.status}</Text>
+        {item.pendingOps > 0 ? ` · ${item.pendingOps} queued` : ""}
+        {f.purchasedAt === null ? "" : ` · ${f.purchasedAt}`}
+        {f.memo === null ? "" : ` · ${f.memo}`}
+      </Text>
+      {f.category !== null && <Text style={styles.dim}>booked: {scheduleFLabel(f.category)}</Text>}
       {receipt.suggestion !== null && !receipt.isApproved && (
-        <View style={styles.suggestion}>
-          <Text style={styles.suggestionText}>
-            🤖 {scheduleFLabel(receipt.suggestion.line)} · {Math.round(receipt.suggestion.confidence * 100)}%
+        <View style={styles.row}>
+          <Text style={[styles.dim, styles.sug]}>
+            suggests {scheduleFLabel(receipt.suggestion.line)} ({Math.round(receipt.suggestion.confidence * 100)}
+            %)
           </Text>
-          <Text style={styles.suggestionRationale}>{receipt.suggestion.rationale}</Text>
-          <Pressable onPress={() => onApprove(receipt.id, receipt.suggestion!.line)} style={styles.button}>
-            <Text style={styles.buttonText}>Approve</Text>
+          <Pressable style={styles.button} onPress={() => onApprove(receipt.id, receipt.suggestion!.line)}>
+            <Text style={styles.buttonText}>approve</Text>
           </Pressable>
         </View>
       )}
       {receipt.conflictLog.map((conflict, index) => (
         <Text key={index} style={styles.conflict}>
-          ⚡ {conflict.field}: kept “{String(conflict.kept)}”, dropped “{String(conflict.discarded)}” from{" "}
-          {conflict.discardedFrom}
+          conflict on {conflict.field}: kept "{String(conflict.kept)}", dropped "{String(conflict.discarded)}"
+          ({conflict.discardedFrom})
         </Text>
       ))}
     </View>
@@ -267,70 +260,44 @@ function ReceiptCard({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: paper },
-  center: { alignItems: "center", justifyContent: "center", gap: 8 },
-  list: { padding: 16, paddingTop: 64, paddingBottom: 48 },
-  headerRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" },
-  h1: { fontSize: 22, fontWeight: "800", color: ink },
-  dim: { color: "#6f675c", fontSize: 13 },
-  empty: { textAlign: "center", marginTop: 32 },
-  card: {
-    backgroundColor: card,
-    borderColor: ink,
-    borderWidth: 1.5,
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 12,
-    gap: 6,
-  },
-  cardTitle: { fontWeight: "700", color: ink, fontSize: 15 },
-  row: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
-  vendor: { fontWeight: "700", color: ink, fontSize: 15, flexShrink: 1 },
-  total: { marginLeft: "auto", color: ink, fontVariant: ["tabular-nums"], fontWeight: "600" },
-  memo: { color: "#4c4438", fontSize: 13 },
+  screen: { flex: 1, backgroundColor: "#fff" },
+  center: { alignItems: "center", justifyContent: "center", gap: 4 },
+  list: { padding: 14, paddingTop: 60, paddingBottom: 40 },
+  title: { fontSize: 17, fontWeight: "700", color: "#222" },
+  dim: { color: "#666", fontSize: 13 },
+  ok: { color: "#1a7f37" },
+  warn: { color: "#9a6700" },
+  link: { color: "#24578f", fontSize: 13 },
+  empty: { marginTop: 24, textAlign: "center" },
+  row: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4, flexWrap: "wrap" },
+  rowBetween: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", marginTop: 2 },
+  spacer: { flex: 1 },
+  form: { borderWidth: 1, borderColor: "#cfcfcf", padding: 8, marginTop: 10, gap: 6 },
   input: {
-    borderWidth: 1.5,
-    borderColor: ink,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    backgroundColor: card,
-    color: ink,
-    fontSize: 14,
-  },
-  inputHalf: { flex: 1 },
-  inputBarn: { flex: 1, paddingVertical: 4, fontSize: 12.5 },
-  settingsRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10 },
-  preview: { width: 38, height: 38, borderRadius: 6, borderWidth: 1, borderColor: ink },
-  button: { backgroundColor: ink, borderRadius: 8, paddingVertical: 8, alignItems: "center", marginTop: 4 },
-  buttonText: { color: card, fontWeight: "700", fontSize: 13.5 },
-  buttonGhost: {
-    borderWidth: 1.5,
-    borderColor: ink,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: card,
-  },
-  buttonGhostText: { color: ink, fontWeight: "700", fontSize: 13 },
-  chip: {
     borderWidth: 1,
-    borderColor: ink,
-    borderRadius: 999,
-    paddingHorizontal: 9,
+    borderColor: "#cfcfcf",
+    paddingHorizontal: 7,
+    paddingVertical: 5,
+    fontSize: 13,
+    color: "#222",
+    backgroundColor: "#fff",
+  },
+  inputBarn: {
+    flex: 1,
+    borderBottomWidth: 1,
+    borderColor: "#cfcfcf",
     paddingVertical: 2,
     fontSize: 12,
-    color: ink,
-    overflow: "hidden",
+    color: "#666",
   },
-  chipCaptured: { backgroundColor: "#eee7d9" },
-  chipSuggested: { backgroundColor: "#fff3c4" },
-  chipApproved: { backgroundColor: "#d7ecc8" },
-  chipPending: { backgroundColor: "#e8e0f0" },
-  chipOnline: { backgroundColor: "#d7ecc8" },
-  chipOffline: { backgroundColor: "#f3d1c4" },
-  suggestion: { backgroundColor: "#f6efdf", borderRadius: 8, padding: 9, gap: 4 },
-  suggestionText: { color: ink, fontWeight: "600", fontSize: 13.5 },
-  suggestionRationale: { color: "#4c4438", fontSize: 12.5 },
-  conflict: { color: "#8a3b2b", fontSize: 12.5 },
+  preview: { width: 30, height: 30, borderWidth: 1, borderColor: "#cfcfcf" },
+  button: { borderWidth: 1, borderColor: "#999", backgroundColor: "#f6f6f6", paddingHorizontal: 9, paddingVertical: 3 },
+  buttonText: { fontSize: 13, color: "#222" },
+  buttonMain: { backgroundColor: "#222", borderColor: "#222" },
+  buttonMainText: { color: "#fff" },
+  vendor: { fontWeight: "700", color: "#222", fontSize: 14, flexShrink: 1 },
+  amount: { color: "#222", fontVariant: ["tabular-nums"], fontSize: 14 },
+  sug: { flexShrink: 1 },
+  receiptRow: { borderTopWidth: 1, borderColor: "#e2e2e2", paddingVertical: 8, marginTop: 8, gap: 2 },
+  conflict: { color: "#b3261e", fontSize: 12 },
 });

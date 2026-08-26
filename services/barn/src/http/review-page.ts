@@ -1,13 +1,14 @@
 import { SCHEDULE_F_LINES } from "@saddlebag/domain";
 
 const LINE_OPTIONS = JSON.stringify(
-  SCHEDULE_F_LINES.map((entry) => ({ id: entry.id, label: `${entry.line} · ${entry.label}` })),
+  SCHEDULE_F_LINES.map((entry) => ({ id: entry.id, label: `${entry.line} ${entry.label}` })),
 );
 
 /**
- * The barn's review queue. Deliberately just another sync client: every edit
- * and approval it makes goes through POST /sync/push as ops from device
- * "barn", the same write path the phones use.
+ * The barn's review queue: one plain table, spreadsheet-style. Deliberately
+ * just another sync client — every edit and approval it makes goes through
+ * POST /sync/push as ops from device "barn", the same write path the phones
+ * use.
  */
 export const REVIEW_PAGE = `<!doctype html>
 <html lang="en">
@@ -16,40 +17,33 @@ export const REVIEW_PAGE = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>saddlebag barn</title>
 <style>
-  :root { color-scheme: light; }
-  * { box-sizing: border-box; }
-  body { margin: 0; font: 15px/1.45 ui-sans-serif, system-ui, sans-serif; background: #f4f1ea; color: #2b2620; }
-  header { padding: 18px 24px; border-bottom: 2px solid #2b2620; display: flex; align-items: baseline; gap: 12px; }
-  header h1 { margin: 0; font-size: 18px; letter-spacing: 0.02em; }
-  header span { color: #6f675c; font-size: 13px; }
-  main { max-width: 880px; margin: 0 auto; padding: 20px 24px 60px; }
-  .card { background: #fffdf8; border: 1.5px solid #2b2620; border-radius: 10px; margin: 14px 0; padding: 14px 16px; display: grid; grid-template-columns: 84px 1fr; gap: 14px; }
-  .thumb { width: 84px; height: 84px; object-fit: cover; border-radius: 6px; border: 1px solid #c9c1b2; background: #eee7d9; }
-  .thumb.empty { display: flex; align-items: center; justify-content: center; color: #a39a8a; font-size: 24px; }
-  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 3px 0; }
-  .vendor { font-weight: 700; }
-  .total { font-variant-numeric: tabular-nums; }
-  .chip { font-size: 12px; border: 1px solid #2b2620; border-radius: 999px; padding: 1px 9px; }
-  .chip.captured { background: #eee7d9; }
-  .chip.suggested { background: #fff3c4; }
-  .chip.approved { background: #d7ecc8; }
-  .suggestion { font-size: 13px; color: #4c4438; background: #f6efdf; border-radius: 6px; padding: 6px 9px; margin-top: 6px; }
-  .conflict { font-size: 12.5px; color: #8a3b2b; margin-top: 6px; }
-  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
-  select, input, button { font: inherit; font-size: 13.5px; border: 1.5px solid #2b2620; border-radius: 7px; padding: 4px 9px; background: #fffdf8; }
-  input { width: 130px; }
-  button { cursor: pointer; background: #2b2620; color: #fffdf8; }
-  button.ghost { background: #fffdf8; color: #2b2620; }
-  .empty-state { text-align: center; color: #6f675c; margin-top: 60px; }
+  body { margin: 0; font: 13px/1.45 -apple-system, "Segoe UI", system-ui, sans-serif; background: #fff; color: #222; }
+  .bar { padding: 7px 12px; border-bottom: 1px solid #c9c9c9; font-weight: 700; }
+  .bar small { font-weight: 400; color: #777; margin-left: 8px; }
+  table { border-collapse: collapse; margin: 12px; }
+  th, td { border: 1px solid #d4d4d4; padding: 3px 8px; text-align: left; vertical-align: top; }
+  th { background: #f2f2f2; font-weight: 600; white-space: nowrap; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td input { border: none; font: inherit; width: 150px; background: transparent; padding: 0; }
+  td input:focus { outline: 1px solid #4a7dbd; background: #ffffe0; }
+  select, button { font: inherit; }
+  button { border: 1px solid #999; border-radius: 0; background: #f6f6f6; padding: 1px 8px; cursor: pointer; }
+  button:hover { background: #ececec; }
+  .memo { color: #666; font-size: 12px; }
+  .sug { color: #555; max-width: 300px; }
+  .captured { color: #666; } .suggested { color: #9a6700; } .approved { color: #1a7f37; }
+  .conflict { color: #b3261e; font-size: 12px; }
+  .empty { color: #777; margin: 24px 12px; }
+  a { color: #24578f; }
 </style>
 </head>
 <body>
-<header><h1>🐴 saddlebag barn</h1><span>review queue — edits here sync back to every device</span></header>
-<main id="list"><p class="empty-state">Loading…</p></main>
+<div class="bar">saddlebag barn<small>review queue — edits here sync back to every device</small></div>
+<div id="out"><p class="empty">Loading…</p></div>
 <script>
 const LINES = ${LINE_OPTIONS};
 const label = (id) => (LINES.find((l) => l.id === id) || { label: id }).label;
-const money = (cents) => cents == null ? "—" : "$" + (cents / 100).toFixed(2).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ",");
+const money = (c) => c == null ? "" : "$" + (c / 100).toFixed(2).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ",");
 const hlc = () => String(Date.now()).padStart(15, "0") + "-000000-barn";
 
 async function pushOps(ops) {
@@ -60,76 +54,102 @@ async function pushOps(ops) {
   });
   await refresh();
 }
+const op = (r, rest) => ({ opId: crypto.randomUUID(), receiptId: r.id, deviceId: "barn", baseRev: r.rev, at: hlc(), ...rest });
 
-function op(receipt, rest) {
-  return { opId: crypto.randomUUID(), receiptId: receipt.id, deviceId: "barn", baseRev: receipt.rev, at: hlc(), ...rest };
+function cell(...children) {
+  const td = document.createElement("td");
+  for (const child of children) td.append(child);
+  return td;
 }
 
-function card(r) {
+function row(r) {
   const f = Object.fromEntries(Object.entries(r.fields).map(([k, v]) => [k, v.value]));
   const status = r.approved.value ? "approved" : r.suggestion ? "suggested" : "captured";
-  const el = document.createElement("section");
-  el.className = "card";
-  el.innerHTML =
-    (r.imageRef
-      ? '<img class="thumb" src="/images/' + r.imageRef + '" alt="receipt">'
-      : '<div class="thumb empty">🧾</div>') +
-    '<div>' +
-      '<div class="row"><span class="vendor">' + (f.vendor ?? "(no vendor yet)") + '</span>' +
-      '<span class="total">' + money(f.totalCents) + '</span>' +
-      '<span>' + (f.purchasedAt ?? "") + '</span>' +
-      '<span class="chip ' + status + '">' + status + '</span></div>' +
-      (f.memo ? '<div class="row">📝 ' + f.memo + '</div>' : "") +
-      (f.category ? '<div class="row">📒 ' + label(f.category) + '</div>' : "") +
-      (r.suggestion
-        ? '<div class="suggestion">🤖 ' + label(r.suggestion.line) + " · " + Math.round(r.suggestion.confidence * 100) + "% — " + r.suggestion.rationale + "</div>"
-        : "") +
-      r.conflictLog.map((c) => '<div class="conflict">⚡ ' + c.field + ": kept “" + c.kept + "”, dropped “" + c.discarded + "” from " + c.discardedFrom + "</div>").join("") +
-      '<div class="controls"></div>' +
-    '</div>';
+  const tr = document.createElement("tr");
 
-  const controls = el.querySelector(".controls");
+  const vendor = document.createElement("input");
+  vendor.value = f.vendor ?? "";
+  const vendorTd = cell(vendor);
+  if (f.memo) {
+    const memo = document.createElement("div");
+    memo.className = "memo";
+    memo.textContent = f.memo;
+    vendorTd.append(memo);
+  }
+  for (const c of r.conflictLog) {
+    const div = document.createElement("div");
+    div.className = "conflict";
+    div.textContent = "conflict on " + c.field + ": kept " + JSON.stringify(c.kept) + ", dropped " + JSON.stringify(c.discarded) + " (" + c.discardedFrom + ")";
+    vendorTd.append(div);
+  }
+  tr.append(vendorTd);
+
+  const amount = cell(money(f.totalCents));
+  amount.className = "num";
+  tr.append(amount, cell(f.purchasedAt ?? ""));
+
+  const sug = cell(r.suggestion ? label(r.suggestion.line) + " (" + Math.round(r.suggestion.confidence * 100) + "%) — " + r.suggestion.rationale : "");
+  sug.className = "sug";
+  tr.append(sug);
+
   const select = document.createElement("select");
   for (const line of LINES) {
     const option = document.createElement("option");
     option.value = line.id;
     option.textContent = line.label;
-    select.appendChild(option);
+    select.append(option);
   }
   select.value = f.category ?? (r.suggestion ? r.suggestion.line : "F32");
+  tr.append(cell(select));
+
+  const statusSpan = document.createElement("span");
+  statusSpan.className = status;
+  statusSpan.textContent = status;
+  tr.append(cell(statusSpan));
+
+  if (r.imageRef) {
+    const link = document.createElement("a");
+    link.href = "/images/" + r.imageRef;
+    link.target = "_blank";
+    link.textContent = "img";
+    tr.append(cell(link));
+  } else {
+    tr.append(cell(""));
+  }
 
   const approve = document.createElement("button");
-  approve.textContent = r.approved.value ? "Re-approve" : "Approve";
+  approve.textContent = r.approved.value ? "re-approve" : "approve";
   approve.onclick = () => pushOps([op(r, { kind: "approve", category: select.value })]);
-
-  const vendor = document.createElement("input");
-  vendor.placeholder = "vendor";
-  vendor.value = f.vendor ?? "";
   const save = document.createElement("button");
-  save.className = "ghost";
-  save.textContent = "Save";
+  save.textContent = "save";
   save.onclick = () => {
-    const set = {};
+    const set = { category: select.value };
     if (vendor.value.trim() && vendor.value !== f.vendor) set.vendor = vendor.value.trim();
-    set.category = select.value;
     pushOps([op(r, { kind: "patch", set })]);
   };
-
-  controls.append(select, approve, vendor, save);
-  return el;
+  tr.append(cell(approve, " ", save));
+  return tr;
 }
 
 async function refresh() {
   const { receipts } = await (await fetch("/receipts")).json();
-  const list = document.getElementById("list");
-  list.replaceChildren();
+  const out = document.getElementById("out");
   if (receipts.length === 0) {
-    list.innerHTML = '<p class="empty-state">Nothing in the barn yet — capture something in the field.</p>';
+    out.innerHTML = '<p class="empty">Nothing in the barn yet — capture something in the field.</p>';
     return;
   }
+  const table = document.createElement("table");
+  const head = document.createElement("tr");
+  for (const title of ["vendor / memo", "amount", "date", "suggestion", "category", "status", "img", ""]) {
+    const th = document.createElement("th");
+    th.textContent = title;
+    head.append(th);
+  }
+  table.append(head);
   receipts
     .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt))
-    .forEach((r) => list.appendChild(card(r)));
+    .forEach((r) => table.append(row(r)));
+  out.replaceChildren(table);
 }
 
 refresh();
