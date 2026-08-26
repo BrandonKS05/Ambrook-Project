@@ -18,14 +18,13 @@ export interface CategorySuggestion {
   extracted: ExtractedReceiptFacts;
 }
 
+export type ImageMediaType = "image/jpeg" | "image/png" | "image/webp" | "image/gif";
+
 export interface CategorizeInput {
   vendor: string | null;
   memo: string | null;
   totalCents: number | null;
-  image: {
-    base64: string;
-    mediaType: "image/jpeg" | "image/png" | "image/webp" | "image/gif";
-  } | null;
+  image: { base64: string; mediaType: ImageMediaType } | null;
 }
 
 /** Port: proposes a Schedule F line for a captured receipt. Adapters live in the barn. */

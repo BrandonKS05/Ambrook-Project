@@ -3,6 +3,7 @@ export {
   type CategorizeInput,
   type CategorySuggestion,
   type ExtractedReceiptFacts,
+  type ImageMediaType,
 } from "./categorizer.js";
 export { DomainError, InvariantViolationError } from "./errors.js";
 export {

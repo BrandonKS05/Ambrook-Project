@@ -3,6 +3,7 @@ export {
   captureOpSchema,
   categorySuggestionDtoSchema,
   fieldConflictSchema,
+  imageUploadRequestSchema,
   opResultSchema,
   patchOpSchema,
   patchSetSchema,

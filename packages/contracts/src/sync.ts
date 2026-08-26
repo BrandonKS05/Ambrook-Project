@@ -129,6 +129,11 @@ export const syncPullResponseSchema = z.object({
   cursor: z.number().int().nonnegative(),
 });
 
+export const imageUploadRequestSchema = z.object({
+  base64: z.string().min(1),
+  mediaType: z.enum(["image/jpeg", "image/png", "image/webp", "image/gif"]),
+});
+
 export type PatchSetDto = z.infer<typeof patchSetSchema>;
 export type ReceiptOpDto = z.infer<typeof receiptOpSchema>;
 export type OpResultDto = z.infer<typeof opResultSchema>;
