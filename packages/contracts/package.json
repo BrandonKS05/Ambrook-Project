@@ -1,0 +1,17 @@
+{
+  "name": "@saddlebag/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Wire contracts for the sync protocol: zod schemas and their inferred types",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  }
+}

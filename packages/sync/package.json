@@ -1,0 +1,23 @@
+{
+  "name": "@saddlebag/sync",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared sync layer: the outbox engine every client runs, plus the codec both sides of the wire use",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./codec": "./src/codec.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@saddlebag/contracts": "workspace:*",
+    "@saddlebag/domain": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.11"
+  }
+}
