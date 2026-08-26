@@ -1,0 +1,10 @@
+packages:
+  - packages/*
+  - services/*
+  - apps/*
+  - tools/*
+
+# better-sqlite3 is a native module; approve its build script (pnpm 10
+# blocks dependency scripts by default).
+onlyBuiltDependencies:
+  - better-sqlite3

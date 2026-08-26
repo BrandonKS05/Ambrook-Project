@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+.env
+.env.*
+
+# barn runtime state (sqlite ledger + uploaded receipt images)
+services/barn/data/
+
+# expo / react native
+.expo/
+apps/field/ios/
+apps/field/android/
