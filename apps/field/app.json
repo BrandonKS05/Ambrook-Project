@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "saddlebag",
+    "slug": "saddlebag-field",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#f4f1ea",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Attach receipt photos from your library to expenses.",
+          "cameraPermission": "Snap receipts in the field, even with no signal."
+        }
+      ],
+      "expo-sqlite"
+    ]
+  }
+}
