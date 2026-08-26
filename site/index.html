@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>saddlebag — offline-first field expense capture</title>
+<meta name="description" content="Snap a receipt in a cellular dead zone; it rides home in the saddlebag and books itself when signal returns.">
+<style>
+  body { margin: 0; font: 14px/1.5 -apple-system, "Segoe UI", system-ui, sans-serif; background: #fff; color: #222; }
+  .bar { padding: 8px 14px; border-bottom: 1px solid #c9c9c9; font-weight: 700; }
+  .bar small { font-weight: 400; color: #777; margin-left: 8px; }
+  main { max-width: 780px; margin: 0 auto; padding: 18px 14px 60px; }
+  h2 { font-size: 15px; border-bottom: 1px solid #d4d4d4; padding-bottom: 4px; margin: 28px 0 10px; }
+  a { color: #24578f; }
+  pre { background: #f7f7f7; border: 1px solid #d4d4d4; padding: 10px 12px; overflow-x: auto; font-size: 12.5px; line-height: 1.45; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #d4d4d4; padding: 4px 9px; text-align: left; vertical-align: top; }
+  th { background: #f2f2f2; font-weight: 600; }
+  .dim { color: #666; }
+  .warn { color: #9a6700; }
+  code { background: #f4f4f4; border: 1px solid #e2e2e2; padding: 0 4px; font-size: 12.5px; }
+</style>
+</head>
+<body>
+<div class="bar">🐴 saddlebag<small>offline-first field expense capture for farms &amp; ranches</small></div>
+<main>
+
+<p><strong>Snap a receipt in a cellular dead zone; it rides home in the
+saddlebag and books itself when the signal returns.</strong> AI proposes the
+IRS Schedule&nbsp;F line, a person approves it. Every write lands in on-device
+SQLite first — the network is an optimization, never the write path.</p>
+
+<p>
+  <a href="https://github.com/BrandonKS05/Ambrook-Project">Source on GitHub</a>
+  <span class="dim"> · TypeScript monorepo: zero-dependency domain, zod wire contracts,
+  shared sync engine, Fastify barn, Expo app · 45 tests</span>
+</p>
+
+<h2>The whole story, in one run of <code>pnpm demo</code></h2>
+<pre>— 7:40 AM, north pasture. No bars on the phone. Three receipts get captured anyway:
+   · CAPTURED  Cenex Co-op         $312.55   [1 op(s) in the saddlebag]
+   · CAPTURED  Tractor Supply Co   $184.37   [1 op(s) in the saddlebag]
+   · CAPTURED  Valley Vet Supply    $96.20   [1 op(s) in the saddlebag]
+
+— 12:15 PM, back in cell range. The saddlebag unloads:
+   ⇄ flush: 1 image(s) up, 3 op(s) applied, 0 duplicate(s), 0 rejected, 3 receipt(s) pulled
+   · SUGGESTED Cenex Co-op         $312.55
+       suggests 19 · Gasoline, fuel, and oil (60%) — Rule match on "Cenex"…
+
+— …and when two writers touch the same field while apart:
+   · SUGGESTED Tractor Supply Co   $184.37   32 · Other expenses
+       ⚡ conflict on category: kept "F32", dropped "F28" from phone-in-the-truck</pre>
+<p class="dim">Real transcript — the repo replays it end-to-end over HTTP against an in-process server.</p>
+
+<h2>What it demonstrates</h2>
+<table>
+  <tr><th>Sync</th><td>Op-based outbox with client ids: at-least-once delivery, exactly-once effects. A replayed "lost response" push changes nothing — there's a test for it.</td></tr>
+  <tr><th>Merge</th><td>Per-field last-writer-wins ordered by hybrid logical clocks. Concurrent losers land in a conflict log on the receipt — arbitrated, surfaced, never silently dropped.</td></tr>
+  <tr><th>AI</th><td>Claude reads the receipt photo (structured outputs) and proposes a line with confidence + rationale. Fills are stamped so <em>any</em> human write outranks them: "the machine defers to people" is a domain invariant with a unit test.</td></tr>
+  <tr><th>Approval</th><td>Only a person books a category — and an offline approval doesn't stick if a concurrent edit changed what they saw.</td></tr>
+  <tr><th>One write path</th><td>The office review UI pushes ops through the same <code>/sync/push</code> as the phones. Every writer is a sync client.</td></tr>
+</table>
+
+<h2>Run it</h2>
+<pre>git clone https://github.com/BrandonKS05/Ambrook-Project.git saddlebag
+cd saddlebag &amp;&amp; pnpm install
+pnpm test     # domain merge semantics, engine, live HTTP protocol
+pnpm demo     # the transcript above
+pnpm dev      # barn + spreadsheet-style review queue on :4477</pre>
+
+<p class="warn">Why no live server behind this page: the barn is deliberately
+stateful (SQLite ledger + receipt photos on disk), which is the wrong shape
+for serverless hosting. The repo ships a <code>Dockerfile</code> that runs it
+on any volume-backed host in minutes.</p>
+
+</main>
+</body>
+</html>
