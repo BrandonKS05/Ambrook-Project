@@ -17,6 +17,7 @@ export { formatCents, parseMoney } from "./money.js";
 export { type ApproveOp, type CaptureOp, type OpResult, type PatchOp, type ReceiptOp } from "./ops.js";
 export { projectLocal } from "./project-local.js";
 export {
+  AI_NODE,
   EDITABLE_FIELD_KEYS,
   Receipt,
   type EditableFields,

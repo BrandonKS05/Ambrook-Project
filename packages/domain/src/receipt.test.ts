@@ -150,7 +150,7 @@ describe("Receipt.applyPatch", () => {
 
 describe("Receipt.withSuggestion", () => {
   it("fills empty fields from the extraction but never overwrites a person", () => {
-    const receipt = captured().withSuggestion(suggestion(), at(6000, "barn"), 1);
+    const receipt = captured().withSuggestion(suggestion(), 1);
     expect(receipt.status).toBe("suggested");
     expect(receipt.fields.vendor).toBe("Tractor Supply Co");
     expect(receipt.fields.purchasedAt).toBe("2026-08-26");
@@ -159,16 +159,27 @@ describe("Receipt.withSuggestion", () => {
   });
 
   it("rejects confidence outside [0, 1]", () => {
-    expect(() => captured().withSuggestion(suggestion({ confidence: 1.2 }), at(6000, "barn"), 1)).toThrow(
-      /confidence/,
+    expect(() => captured().withSuggestion(suggestion({ confidence: 1.2 }), 1)).toThrow(/confidence/);
+  });
+
+  it("always loses AI fills to a person's write, silently", () => {
+    const filled = captured().withSuggestion(suggestion(), 1);
+    expect(filled.fields.purchasedAt).toBe("2026-08-26");
+
+    const humanEdit = filled.applyPatch(
+      { set: { purchasedAt: "2026-08-25" }, at: at(2, "field-a"), baseRev: 0 },
+      2,
     );
+    expect(humanEdit.receipt.fields.purchasedAt).toBe("2026-08-25");
+    expect(humanEdit.conflicts).toEqual([]);
+    expect(humanEdit.receipt.conflictLog).toEqual([]);
   });
 });
 
 describe("Receipt.applyApprove", () => {
   it("books the category and marks the receipt approved", () => {
     const { receipt } = captured()
-      .withSuggestion(suggestion(), at(6000, "barn"), 1)
+      .withSuggestion(suggestion(), 1)
       .applyApprove({ category: "F28", at: at(7000, "field-a"), baseRev: 1 }, 2);
     expect(receipt.status).toBe("approved");
     expect(receipt.fields.category).toBe("F28");

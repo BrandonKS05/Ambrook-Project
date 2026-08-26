@@ -49,6 +49,13 @@ export interface FieldConflict {
 /** Conflicts are kept for review, not forever; the newest entries win the cap. */
 const CONFLICT_LOG_CAP = 20;
 
+/**
+ * Writer id for AI fills. Their stamps use wall-clock zero, so any write by a
+ * person — even one made offline before the fill happened — outranks them, and
+ * losing to a person is never logged as a conflict. The machine defers.
+ */
+export const AI_NODE = "barn-ai";
+
 export interface ReceiptProps {
   readonly id: string;
   /** ISO datetime of the capture moment on the device. */
@@ -203,7 +210,8 @@ export class Receipt {
       const incomingWins = compareHlc(patch.at, current.at) > 0;
       const concurrent = current.rev > patch.baseRev;
 
-      if (concurrent && current.value !== incoming) {
+      const loserNode = incomingWins ? current.at.node : patch.at.node;
+      if (concurrent && current.value !== incoming && loserNode !== AI_NODE) {
         conflicts.push(
           incomingWins
             ? { field: key, kept: incoming, discarded: current.value, discardedFrom: current.at.node }
@@ -261,14 +269,17 @@ export class Receipt {
 
   /**
    * Barn-side: attaches the AI's proposal. Extracted facts fill fields that
-   * are still empty; a value a person already entered is never overwritten.
+   * are still empty; a value a person already entered is never overwritten,
+   * and the fill stamps (wall zero, {@link AI_NODE}) lose every future merge
+   * against a person's write.
    */
-  withSuggestion(suggestion: CategorySuggestion, at: Hlc, nextRev: number): Receipt {
+  withSuggestion(suggestion: CategorySuggestion, nextRev: number): Receipt {
     if (suggestion.confidence < 0 || suggestion.confidence > 1) {
       throw new InvariantViolationError(
         `suggestion confidence must be within [0, 1], got ${suggestion.confidence}`,
       );
     }
+    const at: Hlc = { wall: 0, counter: nextRev, node: AI_NODE };
     let fields = this.props.fields;
     const fill = (key: "vendor" | "totalCents" | "purchasedAt", value: string | number | null) => {
       if (value !== null && fields[key].value === null) {
