@@ -135,6 +135,11 @@ Claude (`claude-opus-5`) reading the actual receipt photo via structured
 outputs: vendor, total, date, line, confidence, and a one-line rationale a
 rancher can sanity-check.
 
+```bash
+cp services/barn/.env.example services/barn/.env   # put your key here (gitignored)
+pnpm --filter @saddlebag/barn smoke:claude         # one-shot categorizer check
+```
+
 | Env var | Default | Meaning |
 |---|---|---|
 | `PORT` | `4477` | barn HTTP port |

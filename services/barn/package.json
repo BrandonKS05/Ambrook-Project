@@ -8,9 +8,9 @@
     "./compose": "./src/compose.ts"
   },
   "scripts": {
-    "dev": "tsx watch src/main.ts",
-    "start": "tsx src/main.ts",
-    "smoke:claude": "tsx scripts/smoke-claude.ts",
+    "dev": "tsx watch --env-file-if-exists=.env src/main.ts",
+    "start": "tsx --env-file-if-exists=.env src/main.ts",
+    "smoke:claude": "tsx --env-file-if-exists=.env scripts/smoke-claude.ts",
     "typecheck": "tsc",
     "test": "vitest run"
   },
