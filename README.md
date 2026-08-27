@@ -28,7 +28,9 @@ engine drives the queue to the server whenever it can.
 ```
 
 That transcript is real — `pnpm demo` replays it end-to-end over HTTP against
-an in-process server.
+an in-process server. A hosted barn is live at
+**[saddlebagbarn-production.up.railway.app](https://saddlebagbarn-production.up.railway.app)**
+(keyless rules mode — see the hosting note below).
 
 ## What's inside
 
