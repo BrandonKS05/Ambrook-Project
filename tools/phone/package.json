@@ -1,0 +1,20 @@
+{
+  "name": "@saddlebag/phone",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A phone in your terminal: interactive saddlebag client for the dead-zone demo",
+  "scripts": {
+    "phone": "tsx src/main.ts",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@saddlebag/contracts": "workspace:*",
+    "@saddlebag/domain": "workspace:*",
+    "@saddlebag/sync": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "tsx": "^4.23.12"
+  }
+}

@@ -129,6 +129,25 @@ more (note the 🎒 queue badge) → flip it off → watch the flush, the 🤖
 suggestions, and approve from the phone while the barn's review page mirrors
 it live. On a physical phone, point the `barn` field at your laptop's LAN IP.
 
+### Simulate the dead zone with no phone at all
+
+`pnpm phone` is a phone in your terminal — the same sync engine, saddlebag
+persisted to a file, pointed at the hosted barn:
+
+```
+saddlebag> stash                  # vendor / amount / memo
+# turn your machine's wi-fi OFF — a real dead zone, nothing simulated
+saddlebag (🎒 1 queued)> stash    # capture works fine; writes never touch the network
+saddlebag (🎒 2 queued)> sync
+  📵 no signal — everything stays in the saddlebag.
+# quit, reopen: the queue survived the restart. wi-fi back ON:
+saddlebag (🎒 2 queued)> sync
+  ⇄ synced: 2 applied, 0 duplicate(s), 0 rejected, 6 pulled
+```
+
+Keep the live review queue open in a browser while you do it — the receipts
+appear there the moment the sync lands.
+
 ### AI categorization
 
 With no configuration the barn uses deterministic keyword rules — the demo

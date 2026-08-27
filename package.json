@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "pnpm --filter @saddlebag/barn dev",
     "demo": "pnpm --filter @saddlebag/field-sim demo",
+    "phone": "pnpm --filter @saddlebag/phone phone",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test"
   },

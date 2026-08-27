@@ -9,6 +9,9 @@ dist/
 # barn runtime state (sqlite ledger + uploaded receipt images)
 services/barn/data/
 
+# terminal-phone saddlebag state
+.phone-state.json
+
 # expo / react native
 .expo/
 apps/field/ios/

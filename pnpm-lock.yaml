@@ -136,6 +136,25 @@ importers:
         specifier: ^4.23.12
         version: 4.23.12
 
+  tools/phone:
+    dependencies:
+      '@saddlebag/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@saddlebag/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@saddlebag/sync':
+        specifier: workspace:*
+        version: link:../../packages/sync
+    devDependencies:
+      '@types/node':
+        specifier: ^26.2.0
+        version: 26.3.0
+      tsx:
+        specifier: ^4.23.12
+        version: 4.23.12
+
 packages:
 
   '@anthropic-ai/sdk@0.121.0':
