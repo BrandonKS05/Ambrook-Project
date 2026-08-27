@@ -46,13 +46,19 @@ const label = (id) => (LINES.find((l) => l.id === id) || { label: id }).label;
 const money = (c) => c == null ? "" : "$" + (c / 100).toFixed(2).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ",");
 const hlc = () => String(Date.now()).padStart(15, "0") + "-000000-barn";
 
+// True while a dropdown or input differs from what the barn last said —
+// the poll must never repaint over an edit someone is still making.
+let dirty = false;
+let lastPayload = "";
+
 async function pushOps(ops) {
   await fetch("/sync/push", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ deviceId: "barn", ops }),
   });
-  await refresh();
+  dirty = false;
+  await refresh(true);
 }
 const op = (r, rest) => ({ opId: crypto.randomUUID(), receiptId: r.id, deviceId: "barn", baseRev: r.rev, at: hlc(), ...rest });
 
@@ -69,6 +75,7 @@ function row(r) {
 
   const vendor = document.createElement("input");
   vendor.value = f.vendor ?? "";
+  vendor.oninput = () => { dirty = true; };
   const vendorTd = cell(vendor);
   if (f.memo) {
     const memo = document.createElement("div");
@@ -100,6 +107,7 @@ function row(r) {
     select.append(option);
   }
   select.value = f.category ?? (r.suggestion ? r.suggestion.line : "F32");
+  select.onchange = () => { dirty = true; };
   tr.append(cell(select));
 
   const statusSpan = document.createElement("span");
@@ -131,8 +139,12 @@ function row(r) {
   return tr;
 }
 
-async function refresh() {
-  const { receipts } = await (await fetch("/receipts")).json();
+async function refresh(force = false) {
+  const text = await (await fetch("/receipts")).text();
+  if (!force && text === lastPayload) return;
+  if (!force && dirty) return;
+  lastPayload = text;
+  const { receipts } = JSON.parse(text);
   const out = document.getElementById("out");
   if (receipts.length === 0) {
     out.innerHTML = '<p class="empty">Nothing in the barn yet — capture something in the field.</p>';
